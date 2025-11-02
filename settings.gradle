@@ -1,0 +1,3 @@
+rootProject.name = 'appliner-internship'
+
+include 'common'
