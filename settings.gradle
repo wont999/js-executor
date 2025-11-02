@@ -1,3 +1,5 @@
 rootProject.name = 'appliner-internship'
 
 include 'common'
+include 'gateway'
+include 'discovery'

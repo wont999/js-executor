@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: gateway
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+    # Уменьшаем интервал обновления реестра для более быстрого обнаружения сервисов
+    registry-fetch-interval-seconds: 5
+    # Включаем initial-instance-info-replication-interval для быстрой регистрации
+    initial-instance-info-replication-interval-seconds: 5
