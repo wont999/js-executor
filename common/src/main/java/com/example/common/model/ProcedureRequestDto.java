@@ -5,10 +5,8 @@ import lombok.Builder;
 import java.util.Map;
 
 @Builder
-public record ProcedureRequest(
-        String requestId,
+public record ProcedureRequestDto(
         String clientType,
-        String procedureName,
         Map<String, Object> parameters,
-        String replyTo
+        String procedureName
 ) {}
