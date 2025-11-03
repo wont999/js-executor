@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: CLIENT-1
+  
+  kafka:
+    bootstrap-servers: localhost:29092
+    
+    consumer:
+      group-id: client-1-worker-group
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.type.mapping: ProcedureRequest:com.example.client_1.model.ProcedureRequest
+    
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+# Server configuration
+server:
+  port: 8082
+
+# Eureka Client configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+# Logging configuration
+logging:
+  level:
+    root: INFO
+    com.example.client_1: INFO
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN
+    com.netflix.eureka: INFO
+    com.netflix.discovery: INFO
+
+# Actuator endpoints for monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,eureka
+  endpoint:
+    health:
+      show-details: always

@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: routing
+
+  kafka:
+    bootstrap-servers: localhost:29092
+    
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        spring.json.add.type.headers: false
+        enable.idempotence: true
+    
+    consumer:
+      auto-offset-reset: latest
+      enable-auto-commit: true
+      auto-commit-interval: 1000
+
+# Server configuration
+server:
+  port: 8081
+
+# Eureka Client configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+    # Уменьшаем интервал обновления реестра для более быстрого обнаружения сервисов
+    registry-fetch-interval-seconds: 5
+    # Включаем initial-instance-info-replication-interval для быстрой регистрации
+    initial-instance-info-replication-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+# Gateway-specific settings
+gateway:
+  # Unique instance identifier for this service instance
+  # Uses Spring expression to generate UUID if not explicitly set
+  instance-id: ${GATEWAY_INSTANCE_ID:gateway-${random.uuid}}
+  
+  request:
+    timeout: 30
