@@ -5,11 +5,12 @@ import com.example.common.config.KafkaListenerConfig;
 import com.example.common.config.KafkaProducerConfig;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.kafka.annotation.EnableKafka;
 
 @Configuration
+@EnableKafka
 @Import({
     KafkaConsumerConfig.class,
-    KafkaProducerConfig.class,
     KafkaListenerConfig.class
 })
 public class KafkaConfig {

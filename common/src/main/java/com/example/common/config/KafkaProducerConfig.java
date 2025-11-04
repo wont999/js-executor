@@ -18,10 +18,10 @@ import java.util.Map;
 public class KafkaProducerConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
-    String bootstrapServers;
+    private String bootstrapServers;
 
     /**
-     * Producer для отправки ответов
+     * ProducerFactory для отправки ответов
      */
     @Bean
     public ProducerFactory<String, ProcedureResponse> responseProducerFactory() {

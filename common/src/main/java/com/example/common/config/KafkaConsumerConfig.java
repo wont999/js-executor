@@ -17,10 +17,10 @@ import java.util.Map;
 public class KafkaConsumerConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
-    String bootstrapServers;
+    private String bootstrapServers;
 
     /**
-     * Consumer для получения запросов на процедуры
+     * ConsumerFactory для получения запросов на процедуры
      */
     @Bean
     public ConsumerFactory<String, ProcedureRequest> requestConsumerFactory() {
@@ -30,7 +30,7 @@ public class KafkaConsumerConfig {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, ProcedureRequest.class.getName());
-        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false); // Игнорировать имя класса из заголовков
+        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
         return new DefaultKafkaConsumerFactory<>(props);
