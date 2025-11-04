@@ -1,17 +1,22 @@
 package com.example.routing.config;
 
+import com.example.common.model.ProcedureRequest;
 import com.example.common.model.ProcedureResponse;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.core.ConsumerFactory;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.core.*;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,16 +26,36 @@ import java.util.Map;
 public class KafkaConfig {
 
     @Value("${gateway.instance-id}")
-    private String instanceId;
+    String instanceId;
 
     @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
+    String bootstrapServers;
 
     @Bean
     public String instanceId() {
         return instanceId;
     }
 
+    // Producer configuration
+    @Bean
+    public ProducerFactory<String, ProcedureRequest> producerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        configProps.put(ProducerConfig.ACKS_CONFIG, "all");
+        configProps.put(ProducerConfig.RETRIES_CONFIG, 3);
+        configProps.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
+        return new DefaultKafkaProducerFactory<>(configProps);
+    }
+
+    @Bean
+    public KafkaTemplate<String, ProcedureRequest> kafkaTemplate() {
+        return new KafkaTemplate<>(producerFactory());
+    }
+
+    // Consumer configuration for replies
     @Bean
     public ConsumerFactory<String, ProcedureResponse> responseConsumerFactory() {
         Map<String, Object> configProps = new HashMap<>();
@@ -53,5 +78,24 @@ public class KafkaConfig {
         factory.setConcurrency(3);
         factory.getContainerProperties().setPollTimeout(3000);
         return factory;
+    }
+
+    // ReplyingKafkaTemplate для request-reply паттерна
+    @Bean
+    public ReplyingKafkaTemplate<String, ProcedureRequest, ProcedureResponse> replyingKafkaTemplate(
+            ProducerFactory<String, ProcedureRequest> producerFactory,
+            ConcurrentMessageListenerContainer<String, ProcedureResponse> repliesContainer) {
+        return new ReplyingKafkaTemplate<>(producerFactory, repliesContainer);
+    }
+
+    @Bean
+    public ConcurrentMessageListenerContainer<String, ProcedureResponse> repliesContainer(
+            ConsumerFactory<String, ProcedureResponse> consumerFactory) {
+        ConcurrentKafkaListenerContainerFactory<String, ProcedureResponse> containerFactory = 
+                new ConcurrentKafkaListenerContainerFactory<>();
+        containerFactory.setConsumerFactory(consumerFactory);
+        containerFactory.getContainerProperties().setGroupId(instanceId);
+        
+        return containerFactory.createContainer(instanceId);
     }
 }
