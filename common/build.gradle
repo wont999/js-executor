@@ -5,6 +5,7 @@ plugins {
 description = 'Common Kafka library'
 
 dependencies {
+    api 'org.springframework.boot:spring-boot-starter-web'
     api 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.boot:spring-boot-autoconfigure'
     implementation 'org.springframework.boot:spring-boot-configuration-processor'

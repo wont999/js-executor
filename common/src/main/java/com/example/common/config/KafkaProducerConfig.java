@@ -15,13 +15,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-public class ProducerKafkaConfig {
+public class KafkaProducerConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
     String bootstrapServers;
 
     /**
-     * Producer для отправки ответов в Gateway
+     * Producer для отправки ответов
      */
     @Bean
     public ProducerFactory<String, ProcedureResponse> responseProducerFactory() {
@@ -29,12 +29,15 @@ public class ProducerKafkaConfig {
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false); // Не добавлять имя класса
+        configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
         configProps.put(ProducerConfig.ACKS_CONFIG, "all");
         configProps.put(ProducerConfig.RETRIES_CONFIG, 3);
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
+    /**
+     * KafkaTemplate для отправки ответов
+     */
     @Bean
     public KafkaTemplate<String, ProcedureResponse> kafkaTemplate() {
         return new KafkaTemplate<>(responseProducerFactory());

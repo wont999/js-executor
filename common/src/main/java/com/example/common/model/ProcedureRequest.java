@@ -1,14 +1,13 @@
 package com.example.common.model;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Builder;
 
-import java.util.Map;
-
 @Builder
-public record ProcedureRequest(
+public record ProcedureRequest<T>(
         String requestId,
         String clientType,
         String procedureName,
-        Map<String, Object> parameters,
+        T parameters,
         String replyTo
 ) {}

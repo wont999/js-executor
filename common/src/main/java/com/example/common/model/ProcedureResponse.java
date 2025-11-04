@@ -4,10 +4,12 @@ import lombok.Builder;
 
 import java.util.Map;
 
+import lombok.Builder;
+
 @Builder
-public record ProcedureResponse(
+public record ProcedureResponse<T>(
         String requestId,
         boolean success,
-        Map<String, Object> result,
+        T result,
         String errorMessage
 ) {}
