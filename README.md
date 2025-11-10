@@ -9,8 +9,9 @@
 
 Пример запроса:
 ```
-curl -X POST http://localhost:8080/routing/api/procedures/execute \
-  -H "Content-Type: application/json" \
+curl -X POST http://localhost:8080/routing/api/procedures/execute
+  -H "Content-Type: application/json"
+  -H "Authorization: Bearer ${token}"
   -d '{
     "clientType": "client-1",
     "procedureName": "calculateSum",
