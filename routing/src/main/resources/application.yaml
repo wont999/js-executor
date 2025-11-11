@@ -48,7 +48,3 @@ gateway:
   
   request:
     timeout: 30
-springdoc:
-  swagger-ui:
-    url: /${spring.application.name}/v3/api-docs
-    config-url: /${spring.application.name}/v3/api-docs/swagger-config

@@ -15,8 +15,8 @@ public class CalculateSumProcedure implements ProcedureExecutor<SumParams, SumRe
     public SumResult execute(SumParams parameters) {
         log.info("Executing calculateSum with parameters: {}", parameters);
 
-        Number a = parameters.a();
-        Number b = parameters.b();
+        var a = parameters.a();
+        var b = parameters.b();
 
         if (a == null || b == null) {
             log.error("Missing required parameters. Received: a={}, b={}", a, b);

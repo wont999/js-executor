@@ -2,19 +2,19 @@ package com.example.client_1.service;
 
 import com.example.common.ProcedureExecutor;
 import com.example.common.exception.ProcedureExecutionException;
-import com.example.common.model.ProcedureRequest;
+import com.example.common.mapper.ProcedureMapper;
+import com.example.common.model.ProcedurePayload;
 import com.example.common.model.ProcedureResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Map;
-import java.util.Optional;
+import java.util.UUID;
 
 import static com.example.common.exception.ExceptionMessages.PROCEDURE_NOT_FOUND;
 
@@ -24,66 +24,81 @@ import static com.example.common.exception.ExceptionMessages.PROCEDURE_NOT_FOUND
 @RequiredArgsConstructor
 public class ProcedureWorkerService {
 
+    final KafkaTemplate<String, ProcedureResponse<?>> kafkaTemplate;
     final Map<String, ProcedureExecutor<?, ?>> procedures;
     final ObjectMapper objectMapper;
+    final ProcedureMapper procedureMapper;
 
-    @KafkaListener(topics = "client-1-procedures", groupId = "worker-client-1")
-    @SendTo
-    public ProcedureResponse<?> handleClient1Procedure(ProcedureRequest<?> request) {
-        log.info("Processing CLIENT-1 procedure: {} (requestId: {})", request.procedureName(), request.requestId());
-        log.info("Received parameters: {}", request.parameters());
 
-        return executeProcedure(request);
+    public <P, R> ProcedureResponse<R> executeProcedure(ProcedurePayload<P> request) {
+        ProcedureExecutor<P, R> executor = getExecutor(request.procedureName());
+
+        P params = convertParameters(request.parameters(), executor);
+        R result = executor.execute(params);
+
+        log.info("Procedure {} completed successfully (requestId: {})", request.procedureName(), request.requestId());
+
+        return procedureMapper.toResponse(request, result);
     }
 
-    /**
-     * Выполняет процедуру и возвращает результат
-     */
-    public <P, R> ProcedureResponse<R> executeProcedure(ProcedureRequest<P> request) {
-        var procedureName = request.procedureName();
+    <P, R> ProcedureExecutor<P, R> getExecutor(String procedureName) {
+        ProcedureExecutor<?, ?> executor = procedures.get(procedureName);
 
-        return Optional.ofNullable(procedures.get(procedureName))
-                .map(executor -> {
-                    // Получаем тип параметра для конвертации
-                    Class<?> parameterType = getParameterType(executor);
-                    
-                    P convertedParams = (P) objectMapper.convertValue(request.parameters(), parameterType);
-                    
-                    // Выполняем процедуру с правильными параметрами
-                    return ((ProcedureExecutor<P, R>) executor).execute(convertedParams);
-                })
-                .map(result -> ProcedureResponse.<R>builder()
-                        .requestId(request.requestId())
-                        .success(true)
-                        .result(result)
-                        .build())
-                .orElseThrow(() -> new ProcedureExecutionException(PROCEDURE_NOT_FOUND.formatted(procedureName)));
+        if (executor == null) {
+            throw new ProcedureExecutionException(PROCEDURE_NOT_FOUND.formatted(procedureName));
+        }
+
+        return (ProcedureExecutor<P, R>) executor;
     }
 
-    /**
-     * Извлекает тип параметра из ProcedureExecutor<P, R>
-     */
-    Class<?> getParameterType(ProcedureExecutor<?, ?> executor) {
-        // Получаем все интерфейсы класса
-        Type[] genericInterfaces = executor.getClass().getGenericInterfaces();
+    <P> P convertParameters(Object parameters, ProcedureExecutor<P, ?> executor) {
+        if (parameters == null) {
+            return null;
+        }
 
-        for (Type genericInterface : genericInterfaces) {
-            if (genericInterface instanceof ParameterizedType paramType) {
-                Type rawType = paramType.getRawType();
+        Class<P> parameterType = getParameterType(executor);
 
-                // Проверяем, что это ProcedureExecutor
-                if (rawType instanceof Class<?> clazz && ProcedureExecutor.class.isAssignableFrom(clazz)) {
-                    // Получаем первый generic-параметр (P в ProcedureExecutor<P, R>)
-                    Type[] typeArguments = paramType.getActualTypeArguments();
-                    if (typeArguments.length > 0 && typeArguments[0] instanceof Class<?>) {
-                        return (Class<?>) typeArguments[0];
-                    }
+        if (parameterType.isInstance(parameters)) {
+            return (P) parameters;
+        }
+
+        P converted = objectMapper.convertValue(parameters, parameterType);
+        log.debug("Successfully converted parameters to type: {}", parameterType.getSimpleName());
+
+        return converted;
+    }
+
+    <P> Class<P> getParameterType(ProcedureExecutor<P, ?> executor) {
+        for (Type genericInterface : executor.getClass().getGenericInterfaces()) {
+            if (genericInterface instanceof ParameterizedType paramType
+                    && paramType.getRawType().equals(ProcedureExecutor.class)) {
+                Type[] typeArguments = paramType.getActualTypeArguments();
+                if (typeArguments.length > 0 && typeArguments[0] instanceof Class<?> clazz
+                        && clazz != Object.class) {
+                    return (Class<P>) clazz;
                 }
             }
         }
 
-        // Если не удалось определить тип, возвращаем Object
-        log.warn("Could not determine parameter type for executor: {}", executor.getClass().getName());
-        return Object.class;
+        log.warn("Could not determine specific parameter type for executor: {}, using Object.class",
+                executor.getClass().getName());
+        return (Class<P>) Object.class;
+    }
+
+    public void sendResponse(String replyToTopic, UUID requestId, ProcedureResponse<?> response) {
+        log.info("Sending response for requestId: {} to topic: {}", requestId, replyToTopic);
+
+        kafkaTemplate.send(replyToTopic, requestId.toString(), response)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Failed to send response for requestId: {} to topic: {}: {}",
+                                requestId, replyToTopic, ex.getMessage(), ex);
+                    } else {
+                        log.debug("Response sent successfully for requestId: {} to partition: {}, offset: {}",
+                                requestId,
+                                result.getRecordMetadata().partition(),
+                                result.getRecordMetadata().offset());
+                    }
+                });
     }
 }

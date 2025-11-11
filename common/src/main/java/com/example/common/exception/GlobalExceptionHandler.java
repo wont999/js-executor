@@ -18,7 +18,7 @@ public class GlobalExceptionHandler {
      * Обработка исключений при таймауте запроса (TimeoutException из CompletableFuture)
      */
     @ExceptionHandler(TimeoutException.class)
-    public ResponseEntity<ProcedureResponse> handleTimeoutException(
+    public ResponseEntity<ProcedureResponse<?>> handleTimeoutException(
             TimeoutException ex) {
 
         log.error("Request timeout: {}", ex.getMessage());
@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
      * Обработка исключений при ошибке выполнения процедуры
      */
     @ExceptionHandler(ProcedureExecutionException.class)
-    public ResponseEntity<ProcedureResponse> handleProcedureExecution(
+    public ResponseEntity<ProcedureResponse<?>> handleProcedureExecution(
             ProcedureExecutionException ex) {
 
         log.error("Procedure execution error: {}", ex.getMessage(), ex);
@@ -51,7 +51,7 @@ public class GlobalExceptionHandler {
      * Обработка исключений при ошибке отправки в Kafka
      */
     @ExceptionHandler(KafkaSendException.class)
-    public ResponseEntity<ProcedureResponse> handleKafkaSend(
+    public ResponseEntity<ProcedureResponse<?>> handleKafkaSend(
             KafkaSendException ex) {
 
         log.error("Kafka send error: {}", ex.getMessage(), ex);
@@ -68,7 +68,7 @@ public class GlobalExceptionHandler {
      * Обработка исключений когда сервис не найден в Eureka Discovery
      */
     @ExceptionHandler(ServiceNotFoundException.class)
-    public ResponseEntity<ProcedureResponse> handleServiceNotFound(
+    public ResponseEntity<ProcedureResponse<?>> handleServiceNotFound(
             ServiceNotFoundException ex) {
 
         log.error("Service not found: {}", ex.getMessage());
@@ -85,7 +85,7 @@ public class GlobalExceptionHandler {
      * Обработка исключений при неверных аргументах (например, неизвестный тип клиента)
      */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ProcedureResponse> handleIllegalArgument(
+    public ResponseEntity<ProcedureResponse<?>> handleIllegalArgument(
             IllegalArgumentException ex) {
 
         log.error("Invalid argument: {}", ex.getMessage());

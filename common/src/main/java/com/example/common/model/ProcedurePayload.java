@@ -2,9 +2,11 @@ package com.example.common.model;
 
 import lombok.Builder;
 
+import java.util.UUID;
+
 @Builder
-public record ProcedureRequest<T>(
-        String requestId,
+public record ProcedurePayload<T>(
+        UUID requestId,
         String clientType,
         String procedureName,
         T parameters,

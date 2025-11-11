@@ -4,12 +4,21 @@ plugins {
 
 description = 'Common Kafka library'
 
+ext {
+    set('mapstructVersion', "1.6.3")
+}
+
 dependencies {
     api 'org.springframework.boot:spring-boot-starter-web'
     api 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.boot:spring-boot-autoconfigure'
     implementation 'org.springframework.boot:spring-boot-configuration-processor'
     testImplementation 'org.springframework.kafka:spring-kafka-test'
+
+    // https://mvnrepository.com/artifact/org.mapstruct/mapstruct
+    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 }
 
 bootJar {

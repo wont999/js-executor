@@ -22,7 +22,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ADDRESS:https://89.111.143.89/keycloak}/realms/${KEYCLOAK_REALM:master}
+          issuer-uri: ${KEYCLOAK_ADDRESS}/realms/${KEYCLOAK_REALM:master}
 eureka:
   client:
     service-url:
