@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres:16.1
+    environment:
+      - POSTGRES_DB=blockly
+      - POSTGRES_USER=blockly
+      - POSTGRES_PASSWORD=blocklypwd
+    ports:
+      - "5433:5432"
