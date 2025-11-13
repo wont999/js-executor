@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: blockly-executor
+  cloud:
+    discovery:
+      enabled: true
+  kafka:
+    bootstrap-servers: localhost:29092
+
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/blockly
+    username: blockly
+    password: blocklypwd
+    hikari:
+      schema: blockly_schema
+      connection-init-sql: CREATE SCHEMA IF NOT EXISTS blockly_schema
+      connection-timeout: 600000
+      maximum-pool-size: 1
+      minimum-idle: 1
+      max-lifetime: 1800000
+      idle-timeout: 600000
+  jpa:
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    hostname: localhost
+    instance-id: ${spring.application.name}:${server.port}
+server:
+  port: 8085
+blockly:
+  kafka:
+    topic: blockly-executor-procedures
