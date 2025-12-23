@@ -7,7 +7,10 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.kafka.annotation.EnableKafka;
 
 @Slf4j
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {
+    "com.example.blockly_executor_service",
+    "com.example.common"  // Подключаем обработчики исключений из common
+})
 @EnableDiscoveryClient
 @EnableKafka
 public class BlocklyExecutorServiceApplication {

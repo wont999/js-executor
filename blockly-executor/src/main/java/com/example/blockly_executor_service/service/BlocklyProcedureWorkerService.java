@@ -46,6 +46,17 @@ public class BlocklyProcedureWorkerService {
         ProcedureExecutor<P, R> executor = getExecutor(request.procedureName());
 
         P params = convertParameters(request.parameters(), executor);
+
+        if (params instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> paramsMap = (Map<String, Object>) params;
+
+            paramsMap.put("__metadata", request.metadata());
+            paramsMap.put("__requestId", request.requestId().toString());
+
+            log.debug("Added execution metadata for userId: {}", request.metadata().userId());
+        }
+
         R result = executor.execute(params);
 
         log.info("Procedure {} completed successfully (requestId: {})", request.procedureName(), request.requestId());

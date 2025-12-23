@@ -40,8 +40,8 @@ public class ProcedureGatewayService {
     /**
      * Выполняет процедуру: отправляет в Kafka и синхронно ждет ответ
      */
-    public ProcedureResponse<?> executeProcedure(ProcedureRequestDto<?> requestDto) {
-        var payload = procedureMapper.toPayload(requestDto, instanceId);
+    public ProcedureResponse<?> executeProcedure(ProcedureRequestDto<?> requestDto, String userId,  String organizationId) {
+        var payload = procedureMapper.toPayload(requestDto, instanceId, userId, organizationId);
 
         var responseFuture = responseStorage.createPendingRequest(payload.requestId());
 
@@ -58,8 +58,8 @@ public class ProcedureGatewayService {
      * Метод выполняется в отдельном потоке благодаря @Async
      */
     @Async
-    public CompletableFuture<ProcedureResponse<?>> executeProcedureAsync(ProcedureRequestDto<?> requestDto) {
-        var payload = procedureMapper.toPayload(requestDto, instanceId);
+    public CompletableFuture<ProcedureResponse<?>> executeProcedureAsync(ProcedureRequestDto<?> requestDto, String userId,String organizationId) {
+        var payload = procedureMapper.toPayload(requestDto, instanceId, userId, organizationId);
 
         var responseFuture = responseStorage.createPendingRequest(payload.requestId());
 

@@ -1,6 +1,7 @@
 package com.example.common.mapper;
 
 
+import com.example.common.model.ExecutionMetadata;
 import com.example.common.model.ProcedurePayload;
 import com.example.common.model.ProcedureRequestDto;
 import com.example.common.model.ProcedureResponse;
@@ -13,14 +14,27 @@ public class ProcedureMapper {
 
     public <T> ProcedurePayload<T> toPayload(
             ProcedureRequestDto<T> dto,
-            String replyTo
+            String replyTo,
+            String userId,
+            String organizationId
     ) {
+
+        String tenantId = (organizationId != null && !organizationId.isEmpty())
+                ? organizationId
+                : userId;
+        ExecutionMetadata metadata = ExecutionMetadata.builder()
+                .userId(userId)
+                .tenantId(tenantId)
+                .headers(new java.util.HashMap<>())
+                .build();
+
         return ProcedurePayload.<T>builder()
                 .requestId(UUID.randomUUID())
                 .clientType(dto.clientType())
                 .procedureName(dto.procedureName())
                 .parameters(dto.parameters())
                 .replyTo(replyTo)
+                .metadata(metadata)
                 .build();
     }
 

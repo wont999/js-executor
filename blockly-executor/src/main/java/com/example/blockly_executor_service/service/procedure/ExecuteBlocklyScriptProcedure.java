@@ -5,11 +5,14 @@ import com.example.blockly_executor_service.model.ExecutionRequest;
 import com.example.blockly_executor_service.model.ExecutionResult;
 import com.example.blockly_executor_service.service.ScriptExecutionService;
 import com.example.common.ProcedureExecutor;
+import com.example.common.model.ExecutionMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Component("executeBlocklyScript")
@@ -23,25 +26,39 @@ public class ExecuteBlocklyScriptProcedure implements ProcedureExecutor<Map<Stri
         log.info("Executing Blockly script with parameters: {}", parameters);
 
         try {
+            // извлекаем системные данные, добавленные BlocklyProcedureWorkerService:
+            ExecutionMetadata metadata = (ExecutionMetadata) parameters.get("__metadata");
+            String requestId = (String) parameters.get("requestId");
+
             String script = (String) parameters.get("script");
-            String scriptId = (String) parameters.get("scriptId");
+
+            Map<String, Object> scriptParams = (Map<String, Object>) parameters.getOrDefault("parameters", Map.of());
+            Map<String, Object> headersFromParams = (Map<String, Object>) parameters.get("headers");
+            Map<String, Object> headers = headersFromParams != null
+                    ? new HashMap<>(headersFromParams)
+                    : new HashMap<>();
 
             if (script == null) {
                 throw new IllegalArgumentException("Script parameter is required");
             }
 
-            // Логируем scriptId только если он передан
-            if (scriptId != null) {
-                log.info("Processing script with ID: {}", scriptId);
-            } else {
-                log.info("Processing script (no ID provided)");
+            if (metadata == null || metadata.userId() == null || metadata.userId().isEmpty()) {
+                throw new SecurityException("User authentication required - metadata is missing");
+            }
+
+            String tenantId = metadata.tenantId();
+            headers.put("tenantId", tenantId);
+
+            if (requestId == null) {
+                requestId = UUID.randomUUID().toString();
             }
 
             // Создаем ExecutionRequest из параметров
             ExecutionRequest request = ExecutionRequest.builder()
                     .script(script)
-                    .params(parameters)
-                    .headers(scriptId != null ? Map.of("scriptId", scriptId) : Map.of())
+                    .params(scriptParams)
+                    .headers(headers)
+                    .requestId(requestId)
                     .build();
 
             // Выполняем скрипт
@@ -49,55 +66,23 @@ public class ExecuteBlocklyScriptProcedure implements ProcedureExecutor<Map<Stri
 
             if (result.getStatus() == ExecutionResult.ExecutionStatus.SUCCESS) {
                 Object scriptResult = result.getResult() != null ? result.getResult() : "undefined";
-                
-                if (scriptId != null) {
-                    log.info("Script executed successfully (ID: {}): {}", scriptId, scriptResult);
-                    return Map.of(
-                            "success", true,
-                            "result", scriptResult,
-                            "scriptId", scriptId
-                    );
-                } else {
-                    log.info("Script executed successfully: {}", scriptResult);
-                    return Map.of(
-                            "success", true,
-                            "result", scriptResult
-                    );
-                }
+
+                log.info("Script executed successfully: {}", scriptResult);
+
+                return scriptResult;
+
             } else {
                 String errorMessage = result.getErrorMessage() != null ? result.getErrorMessage() : "Unknown error";
                 log.error("Script execution failed: {}", errorMessage);
-                
-                if (scriptId != null) {
-                    return Map.of(
-                            "success", false,
-                            "error", errorMessage,
-                            "scriptId", scriptId
-                    );
-                } else {
-                    return Map.of(
-                            "success", false,
-                            "error", errorMessage
-                    );
-                }
+
+
+                throw new RuntimeException(errorMessage);
             }
 
         } catch (Exception e) {
             log.error("Error executing Blockly script: {}", e.getMessage(), e);
-            String scriptId = (String) parameters.get("scriptId");
-            
-            if (scriptId != null) {
-                return Map.of(
-                        "success", false,
-                        "error", e.getMessage(),
-                        "scriptId", scriptId
-                );
-            } else {
-                return Map.of(
-                        "success", false,
-                        "error", e.getMessage()
-                );
-            }
+
+            throw new RuntimeException(e.getMessage());
         }
     }
 }

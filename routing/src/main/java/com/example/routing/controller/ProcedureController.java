@@ -7,10 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -25,21 +22,36 @@ public class ProcedureController {
     final ProcedureGatewayService gatewayService;
 
     @PostMapping("/execute")
-    public ResponseEntity<ProcedureResponse<?>> executeProcedure(@RequestBody ProcedureRequestDto<?> request) {
-        log.info("Received request for procedure: {} (client: {})", request.procedureName(), request.clientType());
+    public ResponseEntity<ProcedureResponse<?>> executeProcedure(
+            @RequestBody ProcedureRequestDto<?> request,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-Organization-Id", required = false) String organizationId
+    ) {
+        log.info("Received request for procedure: {} (client: {}, userId: {})",
+                request.procedureName(), request.clientType(), userId);
 
-        var response = gatewayService.executeProcedure(request);
 
-        log.info("Successfully executed procedure: {} (client: {})", request.procedureName(), request.clientType());
+        if (userId == null || userId.isEmpty()) {
+            log.error("Missing X-User-Id header");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ProcedureResponse.builder()
+                            .success(false)
+                            .errorMessage("User authentication required")
+                            .build());
+        }
 
-        return ResponseEntity.status(OK).body(response);
+        return ResponseEntity.status(OK).body(gatewayService.executeProcedure(request,userId, organizationId));
     }
 
     @PostMapping("/execute-async")
-    public CompletableFuture<ResponseEntity<ProcedureResponse<?>>> executeProcedureAsync(@RequestBody ProcedureRequestDto<?> request) {
+    public CompletableFuture<ResponseEntity<ProcedureResponse<?>>> executeProcedureAsync(
+            @RequestBody ProcedureRequestDto<?> request,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-Organization-Id", required = false) String organizationId
+    ) {
         log.info("Received async request for procedure: {} (client: {})", request.procedureName(), request.clientType());
 
-        return gatewayService.executeProcedureAsync(request)
+        return gatewayService.executeProcedureAsync(request, userId, organizationId)
                 .<ResponseEntity<ProcedureResponse<?>>>thenApply(response -> {
                     log.info("Successfully executed async procedure: {} (client: {})", request.procedureName(), request.clientType());
                     return ResponseEntity.status(OK).body(response);

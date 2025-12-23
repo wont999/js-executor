@@ -1,24 +1,19 @@
 package com.example.blockly_executor_service.service;
 
+import com.example.blockly_executor_service.dao.DatabaseAccessor;
 import com.example.blockly_executor_service.model.ExecutionRequest;
 import com.example.blockly_executor_service.model.ExecutionResult;
-import com.example.blockly_executor_service.model.ScriptExecutionLog;
 import com.example.blockly_executor_service.repository.ScriptExecutionLogRepository;
+import com.example.common.exception.ProcedureExecutionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.script.*;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -39,53 +34,44 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
     @Override
     public ExecutionResult executeScript(ExecutionRequest request) {
 
-//        //TODO: убрать логи
-//        log.info("=== EXECUTION REQUEST DEBUG ===");
-//        log.info("Script: {}", request.getScript());
-//        log.info("Params: {}", request.getParams());
-//        log.info("Headers: {}", request.getHeaders());
-//        log.info("Params is null: {}", request.getParams() == null);
-//        log.info("Headers is null: {}", request.getHeaders() == null);
-
-
-
-
         var scriptEngine = scriptEngineManager.getEngineByName("graal.js");
         if (scriptEngine == null) {
-            throw new RuntimeException("ScriptEngine not found");
+            throw new ProcedureExecutionException("GraalVM JavaScript engine not found");
         }
-        log.info("ScriptEngine found: {}",scriptEngine.getClass().getName());
 
         Instant startTime = Instant.now();
         String requestId = request.getRequestId() != null ? request.getRequestId() : UUID.randomUUID().toString();
+        String tenantId = (String) request.getHeaders().get("tenantId");
+
+        if (tenantId == null || tenantId.isEmpty()) {
+            throw new SecurityException("Tenant ID is required but not provided");
+        }
+
+        log.info("Executing script for tenant: {}", tenantId);
 
         try{
-            log.info("SCRIPT_START - RequestId: {} - Starting script execution at {}", requestId, startTime);
-            ScriptContext context = new SimpleScriptContext();
+            //Разрешает JavaScript коду вызывать Java методы
+            scriptEngine.getContext().setAttribute("polyglot.js.allowHostAccess", true, ScriptContext.ENGINE_SCOPE);
+            //Запрещает JavaScript коду создавать новые Java объекты
+            scriptEngine.getContext().setAttribute("polyglot.js.allowHostClassLookup", false, ScriptContext.ENGINE_SCOPE);
 
-            Map<String, Object> contextData = new HashMap<>();
+            // Создаем DatabaseAccessor для доступа к БД с изоляцией по tenant
+            DatabaseAccessor dbAccessor = new DatabaseAccessor(tenantId, jdbcTemplate);
+            scriptEngine.put("DB", dbAccessor);
+
             if(request.getParams() != null){
-                contextData.putAll(request.getParams());
-            }
-            if(request.getHeaders() != null){
-                contextData.putAll(request.getHeaders());
+                request.getParams().forEach(scriptEngine::put);
             }
 
-            contextData.forEach((key, value) -> {
-                context.setAttribute(key, value, ScriptContext.ENGINE_SCOPE);
-            });
-
-            Object result = scriptEngine.eval(request.getScript(), context);
+            Object result = scriptEngine.eval(request.getScript());
 
             Instant endTime = Instant.now();
             Long executionTime = Duration.between(startTime, endTime).toMillis();
 
 
-
             loggingService.saveLogAsync(request, startTime, endTime, executionTime,
                    ExecutionResult.ExecutionStatus.SUCCESS, null);
 
-            log.info("SCRIPT_END - RequestId: {} - Script completed in {}ms at {}", requestId, executionTime, endTime);
             return ExecutionResult.builder()
                     .requestId(requestId)
                     .result(result)
@@ -138,7 +124,7 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
     public boolean validateScript(String script) {
         var scriptEngine = scriptEngineManager.getEngineByName("graal.js");
         if (scriptEngine == null) {
-            throw new RuntimeException("ScriptEngine not found");
+            throw new ProcedureExecutionException("GraalVM JavaScript engine not found");
         }
         log.info("ScriptEngine found: {}",scriptEngine.getClass().getName());
 

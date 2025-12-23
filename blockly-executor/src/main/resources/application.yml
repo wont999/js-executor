@@ -7,23 +7,26 @@ spring:
   kafka:
     bootstrap-servers: localhost:29092
 
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    default-schema: public
+    liquibase-schema: public
 
   datasource:
     url: jdbc:postgresql://localhost:5433/blockly
     username: blockly
     password: blocklypwd
     hikari:
-      schema: blockly_schema
-      connection-init-sql: CREATE SCHEMA IF NOT EXISTS blockly_schema
       connection-timeout: 600000
       maximum-pool-size: 1
       minimum-idle: 1
       max-lifetime: 1800000
       idle-timeout: 600000
   jpa:
-    generate-ddl: true
+    generate-ddl: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     open-in-view: false
 
 

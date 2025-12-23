@@ -10,5 +10,6 @@ public record ProcedurePayload<T>(
         String clientType,
         String procedureName,
         T parameters,
-        String replyTo
+        String replyTo,
+        ExecutionMetadata metadata
 ) {}

@@ -8,34 +8,29 @@ java {
 
 dependencies {
     implementation project(':common')
-    implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    // spring-boot-starter уже включен в корневом build.gradle
+    // spring-boot-starter-web уже включен в common через api
 
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    // https://mvnrepository.com/artifact/org.graalvm.js/js-scriptengine
+    // GraalVM JavaScript engine
     implementation 'org.graalvm.js:js:25.0.1'
-    implementation("org.graalvm.js:js-scriptengine:25.0.1")
+    implementation 'org.graalvm.js:js-scriptengine:25.0.1'
 
     runtimeOnly 'org.postgresql:postgresql'
 
-    // Kafka
-    implementation 'org.springframework.kafka:spring-kafka'
+    // spring-kafka уже включен в common через api
 
     // Eureka Client
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 
-    // Logging
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+    // lombok уже включен в корневом build.gradle
+    // spring-kafka-test уже включен в common
 
-    // Test dependencies
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.kafka:spring-kafka-test'
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
+    // Liquibase для управления миграциями БД
+    implementation 'org.liquibase:liquibase-core'
 }
 
 tasks.named('test') {

@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.time.Instant;
 
 @Entity
-@Table(name = "script_execution_log")
+@Table(name = "script_execution_log", schema = "blockly_schema")
 @Getter
 @Setter
 public class ScriptExecutionLog {
