@@ -1,0 +1,31 @@
+# PostgreSQL
+# Запуск: docker-compose up -d
+
+services:
+  postgres:
+    image: postgres:16.1
+    container_name: postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-blockly}
+      POSTGRES_USER: ${POSTGRES_USER:-blockly}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blocklypwd}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - infra-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-blockly}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  infra-network:
+    name: infra-network
+    external: true

@@ -1,3 +1,6 @@
+# Kafka кластер (KRaft mode)
+# Запуск: docker-compose up -d
+
 services:
   controller-1:
     image: apache/kafka-native:latest
@@ -10,6 +13,9 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    networks:
+      - infra-network
+    restart: unless-stopped
 
   controller-2:
     image: apache/kafka-native:latest
@@ -22,6 +28,9 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    networks:
+      - infra-network
+    restart: unless-stopped
 
   controller-3:
     image: apache/kafka-native:latest
@@ -34,6 +43,9 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    networks:
+      - infra-network
+    restart: unless-stopped
 
   broker-1:
     image: apache/kafka-native:latest
@@ -51,10 +63,16 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
     depends_on:
       - controller-1
       - controller-2
       - controller-3
+    networks:
+      - infra-network
+    restart: unless-stopped
 
   broker-2:
     image: apache/kafka-native:latest
@@ -72,10 +90,16 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
     depends_on:
       - controller-1
       - controller-2
       - controller-3
+    networks:
+      - infra-network
+    restart: unless-stopped
 
   broker-3:
     image: apache/kafka-native:latest
@@ -93,7 +117,18 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
     depends_on:
       - controller-1
       - controller-2
       - controller-3
+    networks:
+      - infra-network
+    restart: unless-stopped
+
+networks:
+  infra-network:
+    name: infra-network
+    driver: bridge
