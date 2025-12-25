@@ -1,0 +1,20 @@
+# Routing Service
+# Запуск: docker-compose up -d --scale routing=2
+
+services:
+  routing:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SERVER_PORT: 8081
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-broker-1:19092}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_URL:-http://discovery:8761/eureka/}
+    networks:
+      - infra-network
+    restart: unless-stopped
+
+networks:
+  infra-network:
+    name: infra-network
+    external: true

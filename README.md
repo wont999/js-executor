@@ -1,23 +1,50 @@
-# appliner-internship
+# Blockly Executor Service
 
-1. Запустить docker kafka
-2. Запустить discovery server
-3. Запустить gateway server
-4. Запустить routing server
-5. Запустить клиентов server
+Микросервис для безопасного выполнения Blockly/JS скриптов.
 
+## Запуск
 
-Пример запроса:
+```bash
+docker-compose up -d --build
 ```
-curl -X POST http://localhost:8080/routing/api/procedures/execute
-  -H "Content-Type: application/json"
-  -H "Authorization: Bearer ${token}"
+
+Масштабирование:
+```bash
+docker-compose up -d --scale blockly-executor=3
+```
+
+## Тестовый запрос
+
+1. Получить токен:
+```bash
+curl -X POST "http://localhost:8080/realms/appliner/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "client_id=gateway-client" \
+  -d "client_secret=tI8E3gAt6NqYRD0GhsKBhEpV3sPWyqy0" \
+  -d "username=testuser" \
+  -d "password=testpass" \
+  -d "grant_type=password"
+```
+
+2. Выполнить скрипт:
+```bash
+curl -X POST "http://localhost:8180/routing/api/procedures/execute" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
   -d '{
-    "clientType": "client-1",
-    "procedureName": "calculateSum",
+    "clientType": "blockly-executor",
+    "procedureName": "executeBlocklyScript",
     "parameters": {
-      "a": 22215,
-      "b": 25
+      "script": "var result = 2 + 2; result;",
+      "parameters": {}
     }
   }'
 ```
+
+## Структура
+
+- `blockly-executor/` — основной сервис выполнения скриптов
+- `common/` — общие модели и интерфейсы
+- `routing/` — маршрутизация запросов через Kafka
+- `gateway/` — API Gateway
+- `discovery/` — Eureka Service Discovery

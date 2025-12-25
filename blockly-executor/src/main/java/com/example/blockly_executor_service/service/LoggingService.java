@@ -18,9 +18,11 @@ import java.time.Instant;
 public class LoggingService {
 
     private final ScriptExecutionLogRepository scriptExecutionLogRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     public LoggingService(ScriptExecutionLogRepository scriptExecutionLogRepository, JdbcTemplate jdbcTemplate) {
         this.scriptExecutionLogRepository = scriptExecutionLogRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Async("taskExecutor")
@@ -34,7 +36,7 @@ public class LoggingService {
         log.info("DB_WRITE_START - RequestId: {}", request.getRequestId());
         try {
             // Имитируем медленную работу с БД через pg_sleep
-            //jdbcTemplate.execute("SELECT pg_sleep(1)"); // 1 секунда задержка
+            // jdbcTemplate.execute("SELECT pg_sleep(3)"); // 3 секунды задержка
 
             var executionLog = new ScriptExecutionLog();
             executionLog.setRequestId(request.getRequestId());

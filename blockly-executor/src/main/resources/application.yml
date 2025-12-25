@@ -5,18 +5,21 @@ spring:
     discovery:
       enabled: true
   kafka:
-    bootstrap-servers: localhost:29092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: earliest
 
   liquibase:
-    enabled: true
+    enabled: ${SPRING_LIQUIBASE_ENABLED:true}
     change-log: classpath:db/changelog/db.changelog-master.yaml
     default-schema: public
     liquibase-schema: public
+    contexts: dev
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/blockly
-    username: blockly
-    password: blocklypwd
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/blockly}
+    username: ${SPRING_DATASOURCE_USERNAME:blockly}
+    password: ${SPRING_DATASOURCE_PASSWORD:blocklypwd}
     hikari:
       connection-timeout: 600000
       maximum-pool-size: 1
@@ -29,19 +32,24 @@ spring:
       ddl-auto: none
     open-in-view: false
 
-
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
     fetch-registry: true
     register-with-eureka: true
   instance:
     prefer-ip-address: true
     hostname: localhost
-    instance-id: ${spring.application.name}:${server.port}
+    instance-id: ${spring.application.name}:${random.value}
+
+
 server:
-  port: 8085
+  port: ${SERVER_PORT:8085}
 blockly:
   kafka:
     topic: blockly-executor-procedures
+
+kafka:
+  topic:
+    partitions: 12

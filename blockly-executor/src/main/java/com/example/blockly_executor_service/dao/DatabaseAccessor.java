@@ -33,9 +33,21 @@ public class DatabaseAccessor {
             throw new SecurityException("Only SELECT queries are allowed");
         }
 
-        // Автоматически добавляем фильтр по tenant_id если его нет
-        if (!sql.toLowerCase().contains("tenant_id")) {
-            log.warn("Query without tenant_id filter: {}", sql);
+        String allowedSchema = "tenant_" + tenantId;
+        String sqlLower = sql.toLowerCase();
+        
+        // Проверяем что нет обращения к системным схемам
+        if (sqlLower.contains("pg_") || sqlLower.contains("information_schema")) {
+            throw new SecurityException("Access denied: cannot query system tables");
+        }
+        
+        // Находим все упоминания tenant_ и проверяем что все они относятся к текущему tenant
+        int index = 0;
+        while ((index = sqlLower.indexOf("tenant_", index)) != -1) {
+            if (!sqlLower.startsWith(allowedSchema.toLowerCase(), index)) {
+                throw new SecurityException("Access denied: cannot query other tenant's data");
+            }
+            index += allowedSchema.length();
         }
 
         return jdbcTemplate.queryForList(sql, params);

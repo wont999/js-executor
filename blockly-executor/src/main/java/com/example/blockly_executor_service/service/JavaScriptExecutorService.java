@@ -14,12 +14,15 @@ import javax.script.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.*;
 
 @Slf4j
 @Service
 @EnableAsync(proxyTargetClass = true)
 public class JavaScriptExecutorService implements ScriptExecutionService {
 
+    private static final long SCRIPT_TIMEOUT_SECONDS = 10;
+    private final ExecutorService scriptExecutor = Executors.newCachedThreadPool();
     private final ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
     private final ScriptExecutionLogRepository scriptExecutionLogRepository;
     private final JdbcTemplate jdbcTemplate;
@@ -63,7 +66,14 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
                 request.getParams().forEach(scriptEngine::put);
             }
 
-            Object result = scriptEngine.eval(request.getScript());
+            Future<Object> future = scriptExecutor.submit(() -> scriptEngine.eval(request.getScript()));
+            Object result;
+            try {
+                result = future.get(SCRIPT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                future.cancel(true);
+                throw new RuntimeException("Script execution timeout after " + SCRIPT_TIMEOUT_SECONDS + " seconds");
+            }
 
             Instant endTime = Instant.now();
             Long executionTime = Duration.between(startTime, endTime).toMillis();
@@ -81,17 +91,34 @@ public class JavaScriptExecutorService implements ScriptExecutionService {
                     .endTime(endTime)
                     .build();
 
-        } catch (ScriptException e) {
+        } catch (ExecutionException e) {
             Instant endTime = Instant.now();
             Long executionTime = Duration.between(startTime, endTime).toMillis();
+            String errorMsg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
 
             log.error("SCRIPT_ERROR - RequestId: {} - {} - Script failed in {}ms at {}",
-                requestId,e.getMessage(), executionTime, endTime);
-            loggingService.saveLogAsync(request, startTime, endTime, executionTime, ExecutionResult.ExecutionStatus.ERROR, e.getMessage());
+                requestId, errorMsg, executionTime, endTime);
+            loggingService.saveLogAsync(request, startTime, endTime, executionTime, ExecutionResult.ExecutionStatus.ERROR, errorMsg);
 
             return ExecutionResult.builder()
                     .requestId(requestId)
-                    .errorMessage(e.getMessage())
+                    .errorMessage(errorMsg)
+                    .status(ExecutionResult.ExecutionStatus.ERROR)
+                    .executionTime(executionTime)
+                    .startTime(startTime)
+                    .endTime(endTime)
+                    .build();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Instant endTime = Instant.now();
+            Long executionTime = Duration.between(startTime, endTime).toMillis();
+
+            log.error("SCRIPT_INTERRUPTED - RequestId: {} - Script interrupted in {}ms", requestId, executionTime);
+            loggingService.saveLogAsync(request, startTime, endTime, executionTime, ExecutionResult.ExecutionStatus.ERROR, "Script execution interrupted");
+
+            return ExecutionResult.builder()
+                    .requestId(requestId)
+                    .errorMessage("Script execution interrupted")
                     .status(ExecutionResult.ExecutionStatus.ERROR)
                     .executionTime(executionTime)
                     .startTime(startTime)
