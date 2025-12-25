@@ -3,3 +3,9 @@ databaseChangeLog:
       file: db/changelog/changes/000-create-blockly-schema.yaml
   - include:
       file: db/changelog/changes/001-create-script-execution-log.yaml
+  - include:
+      file: db/changelog/changes/002-create-tenant-schemas.yaml
+  - include:
+      file: db/changelog/changes/003-create-tenant-products.yaml
+  - include:
+      file: db/changelog/changes/004-insert-test-data.yaml

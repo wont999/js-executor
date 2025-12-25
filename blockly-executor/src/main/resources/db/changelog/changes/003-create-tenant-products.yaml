@@ -1,0 +1,74 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-products-appliner
+      author: developer
+      comment: Create products table for appliner tenant
+      changes:
+        - createTable:
+            schemaName: tenant_appliner
+            tableName: products
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category
+                  type: VARCHAR(100)
+              - column:
+                  name: price
+                  type: DECIMAL(10,2)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+      rollback:
+        - dropTable:
+            schemaName: tenant_appliner
+            tableName: products
+
+  - changeSet:
+      id: 003-create-products-google
+      author: developer
+      comment: Create products table for google tenant
+      changes:
+        - createTable:
+            schemaName: tenant_google
+            tableName: products
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category
+                  type: VARCHAR(100)
+              - column:
+                  name: price
+                  type: DECIMAL(10,2)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+      rollback:
+        - dropTable:
+            schemaName: tenant_google
+            tableName: products

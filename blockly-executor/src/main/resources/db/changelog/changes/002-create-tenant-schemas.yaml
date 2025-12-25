@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-tenant-schemas
+      author: developer
+      comment: Create schemas for multi-tenant isolation demo
+      changes:
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS tenant_appliner
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS tenant_google
+      rollback:
+        - sql:
+            sql: DROP SCHEMA IF EXISTS tenant_google CASCADE
+        - sql:
+            sql: DROP SCHEMA IF EXISTS tenant_appliner CASCADE
